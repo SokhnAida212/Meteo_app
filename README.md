@@ -2,6 +2,11 @@
 
 une application Flutter qui récupère des données météo en temps réel, affiche une jauge de progression et permet de visualiser les résultats sur une carte interactive.
 
+Réalisateur
+
+* Fatou Samba
+* Aida Mbaye
+
 ## Getting Started
 
 This project is a starting point for a Flutter application.
