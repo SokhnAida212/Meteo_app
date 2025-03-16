@@ -2,7 +2,7 @@
 
 une application Flutter qui récupère des données météo en temps réel, affiche une jauge de progression et permet de visualiser les résultats sur une carte interactive.
 
-Réalisateur
+Le projet a été réalisé par :
 
 * Fatou Samba
 * Aida Mbaye
