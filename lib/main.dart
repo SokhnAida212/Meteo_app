@@ -7,7 +7,7 @@ import 'screens/home_screen.dart';
 void main() {
   runApp(
     ChangeNotifierProvider(
-      create: (context) => ThemeProvider(), // Créez une instance de ThemeProvider
+      create: (context) => ThemeProvider(),
       child: MyApp(),
     ),
   );
@@ -21,9 +21,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Weather App',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData.light(), // Thème clair
-      darkTheme: ThemeData.dark(), // Thème sombre
-      themeMode: themeProvider.themeMode, // Utilisez le mode actuel (clair ou sombre)
+      theme: ThemeData.light(),
+      darkTheme: ThemeData.dark(),
+      themeMode: themeProvider.themeMode,
       home: SplashScreen(),
     );
   }
