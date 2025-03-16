@@ -1,7 +1,7 @@
+
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/city_model.dart';
-
 
 class WeatherAPI {
   static Future<WeatherData> fetchWeatherData(String city) async {
@@ -26,8 +26,14 @@ class WeatherAPI {
         windSpeed: data['wind']['speed'].toString(),
         humidity: data['main']['humidity'].toString(),
         temp_max: (data['main']['temp_max'] - 273.15).toStringAsFixed(0),
-        precipitation: precipitation,
-        timezone: data['timezone'],
+        temp_min: (data['main']['temp_min'] - 273.15).toStringAsFixed(0),
+        precipitation: data['rain'] != null ? data['rain']['1h'].toDouble() : 0.0,
+        visibility: data['visibility'] ?? 0,
+        pressure: data['main']['pressure'] ?? 0,
+        feels_like: (data['main']['feels_like'] - 273.15).toStringAsFixed(0),
+        sunrise: data['sys']['sunrise'] ?? 0,
+        sunset: data['sys']['sunset'] ?? 0,
+        clouds:data['clouds']['all'] ?? 0,
       );
     } else {
       try {

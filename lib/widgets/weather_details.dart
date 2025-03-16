@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,25 +7,39 @@ import '../models/city_model.dart';
 import '../models/theme_provider.dart';
 import '../screens/home_screen.dart';
 import '../utils/constantes.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-class WeatherDetails extends StatelessWidget {
+class WeatherDetails extends StatefulWidget {
   final WeatherData weatherData;
 
-  WeatherDetails({super.key, required this.weatherData});
+  const WeatherDetails({super.key, required this.weatherData});
+
+  @override
+  _WeatherDetailsState createState() => _WeatherDetailsState();
+}
+
+class _WeatherDetailsState extends State<WeatherDetails> {
+  bool _isDateFormattingInitialized = false;
 
   String getTodayDate() {
     initializeDateFormatting('fr', null);
     DateTime now = DateTime.now();
-    String formattedDate =
-    DateFormat('EEEE d MMMM', 'fr').format(now).toUpperCase();
+    String formattedDate = DateFormat('EEEE d MMMM', 'fr').format(now).toUpperCase();
     return formattedDate;
   }
+  String getCityTime(int timezoneOffset) {
+    DateTime now = DateTime.now().toUtc();
+    DateTime cityTime = now.add(Duration(seconds: timezoneOffset));
+    String formattedTime = DateFormat('HH:mm').format(cityTime);
+    return formattedTime;
+  }
 
-  // Fonction pour ouvrir Google Maps avec les coordonnées de la ville
+
+
   void openGoogleMaps() async {
     final String googleMapsUrl =
-        "https://www.google.com/maps/search/?api=1&query=${weatherData.latitude},${weatherData.longitude}";
+        "https://www.google.com/maps/search/?api=1&query=${widget.weatherData.latitude},${widget.weatherData.longitude}";
     if (await canLaunchUrl(Uri.parse(googleMapsUrl))) {
       await launchUrl(Uri.parse(googleMapsUrl));
     } else {
@@ -36,64 +51,37 @@ class WeatherDetails extends StatelessWidget {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     Constantes myConst = Constantes();
-    IconData weatherIcon = getWeatherIcon(weatherData.weatherDescription);
+    String weatherImage = _getWeatherImage(widget.weatherData.weatherDescription);
 
     Size size = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        elevation: 0.0,
-        automaticallyImplyLeading: false,
-        centerTitle: false,
-        titleSpacing: 0,
-        title: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          width: size.width,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () {
+        title: Text('Météo', style: TextStyle(color: themeProvider.textColor)),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.menu, color: themeProvider.iconColor),
+            onSelected: (String result) {
+              switch (result) {
+                case 'Accueil':
                   Navigator.pop(context);
-                },
-                icon: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  child: Image.asset(
-                    'assets/bouton-fleche.png',
-                    width: 30,
-                    height: 30,color: themeProvider.iconColor
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => HomeScreen()),
-                  );
-                },
-                icon: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  child: Image.asset(
-                    'assets/accueil.png',
-                    width: 30,
-                    height: 30,color: themeProvider.iconColor
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(themeProvider.themeMode == ThemeMode.dark
-                    ? Icons.light_mode
-                    : Icons.dark_mode,
-                    color: themeProvider.iconColor),
-                onPressed: () {
-                  // Bascule entre le mode clair et sombre
+                  break;
+                case 'Changer le thème':
                   themeProvider.toggleTheme(themeProvider.themeMode == ThemeMode.light);
-                },
-              )
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'Accueil',
+                child: Text('Accueil'),
+              ),
+              PopupMenuItem<String>(
+                value: 'Changer le thème',
+                child: Text('Changer le thème'),
+              ),
             ],
           ),
-        ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -103,338 +91,537 @@ class WeatherDetails extends StatelessWidget {
           ),
         ),
         padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Titre et date
-            Container(
-              margin: EdgeInsets.only(left: 140),
-              child: Text(
-                weatherData.cityName,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.titleLarge?.color,
-                  fontSize: 30,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Titre et date
+              Center(
+                child: Container(
+                  child: Text(
+                    widget.weatherData.cityName,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: themeProvider.textColor,
+                      fontSize: 40,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            Container(
-              margin: const EdgeInsets.only(left: 120),
-              child: Text(
-                getTodayDate(),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
+              Center(
+                child: Container(
+                  child: Text(
+                    getTodayDate(),
+                    style: TextStyle(
+                      color: themeProvider.textColor.withOpacity(0.7),
+                      fontSize: 18,
+                    ),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 50),
-            // Container affichant l'icône météo et la description
-            Container(
-              width: size.width,
-              height: 200,
-              decoration: BoxDecoration(
-                color: Color(0x8DBCF6FF),
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.blue,
-                    offset: const Offset(0, 20),
-                    blurRadius: 10,
-                    spreadRadius: -12,
-                  )
-                ],
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Positioned(
-                    top: -50,
-                    left: 20,
-                    child: Icon(
-                      weatherIcon,
-                      size: 170,
-                      color:
-                      Colors.grey.shade300.withOpacity(0.8),
+              const SizedBox(height: 57),
+              // Container affichant l'icône météo et la description
+              Container(
+                width: size.width,
+                height: 200,
+                decoration: BoxDecoration(
+                  color: themeProvider.cardColor.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.blue.withOpacity(0.3),
+                      offset: const Offset(0, 20),
+                      blurRadius: 10,
+                      spreadRadius: -12,
                     ),
-                  ),
-                  Positioned(
-                    top: 150,
-                    left: 20,
-                    right: 20,
-                    child: Text(
-                      weatherData.weatherDescription,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
+                  ],
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned(
+                      top: -50,
+                      left: 20,
+                      child: Image.asset(
+                        weatherImage,
+                        width: 170,
+                        height: 170,
                       ),
                     ),
-                  ),
-                  Positioned(
-                    top: 20,
-                    right: 20,
-                    child: Text(
-                      '${weatherData.temperature}°',
-                      style: TextStyle(
-                        fontSize: 70,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0x8DBCF6FF),
+                    Positioned(
+                      top: 150,
+                      left: 20,
+                      right: 20,
+                      child: Text(
+                        widget.weatherData.weatherDescription,
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold, 
+                          color: themeProvider.textColor,
+                          fontSize: 20,
+                        ),
                       ),
                     ),
-                  )
-                ],
+                    Positioned(
+                      top: 20,
+                      right: 20,
+                      child: Text(
+                        '${widget.weatherData.temperature}°',
+                        style: TextStyle(
+                          fontSize: 70,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.textColor,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 50),
-            // Première rangée d'icônes
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Vitesse du vent
-                  Column(
-                    children: [
-                      const Text(
-                        'Vitesse du Vent',
-                        style: TextStyle(
-                          color: Color(0xB3D4F5FF),
-                          fontWeight: FontWeight.bold,
+              const SizedBox(height: 50),
+              // Première rangée d'icônes
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Vitesse du vent
+                    Column(
+                      children: [
+                        Text(
+                          'Vitesse du Vent',
+                          style: TextStyle(
+                            color: themeProvider.textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          color: Color(0xffE0E8FB),
-                          borderRadius: BorderRadius.all(Radius.circular(15)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.all(10.0),
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: themeProvider.cardColor.withOpacity(0.8),
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          child: Image.asset('assets/windspeed.png'),
                         ),
-                        child: Image.asset('assets/windspeed.png'),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${weatherData.windSpeed} km/h',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${widget.weatherData.windSpeed} km/h',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17,  
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                  // Humidité
-                  Column(
-                    children: [
-                      const Text(
-                        'Humidité',
-                        style: TextStyle(
-                          color: Color(0xB3D4F5FF),
-                          fontWeight: FontWeight.bold,
+                      ],
+                    ),
+                    // Humidité
+                    Column(
+                      children: [
+                        Text(
+                          'Humidité',
+                          style: TextStyle(
+                            color: themeProvider.textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          color: Color(0xffE0E8FB),
-                          borderRadius: BorderRadius.all(Radius.circular(15)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.all(10.0),
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: themeProvider.cardColor.withOpacity(0.8),
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          child: Image.asset('assets/humidity1.png'),
                         ),
-                        child: Image.asset('assets/humidity.png'),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        weatherData.humidity,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
+                        const SizedBox(height: 8),
+                        Text(
+                          widget.weatherData.humidity,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17,  
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                  // Température max
-                  Column(
-                    children: [
-                      const Text(
-                        'Temp_max',
-                        style: TextStyle(
-                          color: Color(0xB3D4F5FF),
-                          fontWeight: FontWeight.normal,
+                      ],
+                    ),
+                    // Température max
+                    Column(
+                      children: [
+                        Text(
+                          'Temp_max',
+                          style: TextStyle(
+                            color: themeProvider.textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          color: Color(0xffE0E8FB),
-                          borderRadius: BorderRadius.all(Radius.circular(15)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.all(10.0),
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: themeProvider.cardColor.withOpacity(0.8),
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          child: Image.asset('assets/max-temp.png'),
                         ),
-                        child: Image.asset('assets/max-temp.png'),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${weatherData.temp_max}°',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${widget.weatherData.temp_max}°',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17,  
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 50),
-            // Deuxième rangée d'icônes
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Précipitations
-                  Column(
-                    children: [
-                      const Text(
-                        'Précipitation',
-                        style: TextStyle(
-                          color: Color(0xB3D4F5FF),
-                          fontWeight: FontWeight.bold,
+              const SizedBox(height: 40),
+              // Deuxième rangée d'icônes
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Précipitations
+                    Column(
+                      children: [
+                        Text(
+                          'Précipitation',
+                          style: TextStyle(
+                            color: themeProvider.textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,  
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          color: Color(0xffE0E8FB),
-                          borderRadius: BorderRadius.all(Radius.circular(15)),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.all(10.0),
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: themeProvider.cardColor.withOpacity(0.8),
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          child: Image.asset('assets/moderaterainattimes.png'),
                         ),
-                        child: Image.asset('assets/pluie.png'),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${weatherData.precipitation} mm',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${widget.weatherData.precipitation} mm',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17,  
+                          ),
                         ),
-                      )
-                    ],
-                  ),
-                  // Humidité (encore, si besoin d'afficher deux fois)
-                  Column(
-                    children: [
-                      const Text(
-                        'Humidité',
-                        style: TextStyle(
-                          color: Color(0xB3D4F5FF),
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          color: Color(0xffE0E8FB),
-                          borderRadius: BorderRadius.all(Radius.circular(15)),
-                        ),
-                        child: Image.asset('assets/humidity.png'),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        weatherData.humidity,
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
-                        ),
-                      )
-                    ],
-                  ),
-                  // Température max (répétée si besoin)
-                  Column(
-                    children: [
-                      const Text(
-                        'Temp_max',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(10.0),
-                        height: 80,
-                        width: 80,
-                        decoration: const BoxDecoration(
-                          color: Color(0xffE0E8FB),
-                          borderRadius: BorderRadius.all(Radius.circular(15)),
-                        ),
-                        child: Image.asset('assets/max-temp.png'),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${weatherData.temp_max}°',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xB3D4F5FF),
-                        ),
-                      )
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                      ],
+                    ),
 
-            // Bouton "Voir sur Google Maps" en bas
-            const SizedBox(height: 30),
-            Center(
-              child: ElevatedButton.icon(
-                onPressed: openGoogleMaps,
-                icon: const Icon(Icons.location_on, color: Colors.white),
-                label: const Text(
-                  "Voir sur Google Maps",
-                  style: TextStyle(color: Colors.white),
+                    Column(
+                      children: [
+                        Text(
+                          'Visibilité',
+                          style: TextStyle(
+                            color: themeProvider.textColor,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 17,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.all(10.0),
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: themeProvider.cardColor.withOpacity(0.8),
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          child: Image.asset('assets/windspeed1.png'),
+                        ),
+                        const SizedBox(height: 8),
+                         Text(
+                           '${widget.weatherData.visibility / 1000} km',
+                            style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17, 
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    Column(
+                      children: [
+                        Text(
+                          'Temps min',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: EdgeInsets.all(10.0),
+                          height: 80,
+                          width: 80,
+                          decoration: BoxDecoration(
+                            color: themeProvider.cardColor.withOpacity(0.8),
+                            borderRadius: BorderRadius.all(Radius.circular(15)),
+                          ),
+                          child: Image.asset('assets/humidity.png'),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          '${widget.weatherData.temp_max}°',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: themeProvider.textColor,
+                            fontSize: 17, 
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  padding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              ),
+              const SizedBox(height: 50),
+              // Carte pour les informations supplémentaires (VENT, HUMIDITÉ, TEMP_MAX)
+              Card(
+                elevation: 0,
+                color: themeProvider.cardColor.withOpacity(0.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'VENT',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(Icons.air, color: Colors.green),
+                          SizedBox(width: 8),
+                          Text('Vitesse' ,
+                          style: TextStyle(fontSize: 18,)
+                          ),
+                          Spacer(),
+                          Text('${widget.weatherData.windSpeed} m/s',style: TextStyle(fontSize: 18)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.water_drop,color: Colors.blue,),
+                          SizedBox(width: 8),
+                          Text('Humidité',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text('${widget.weatherData.humidity}%',style: TextStyle(fontSize: 18)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.thermostat, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Temp_max',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text('${widget.weatherData.temp_max} K',style: TextStyle(fontSize: 18)),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 20),
+              // Carte pour le lever et le coucher du soleil
+              Card(
+                elevation: 0,
+                color: themeProvider.cardColor.withOpacity(0.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'SOLEIL',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(Icons.wb_sunny, color: Colors.orange),
+                          SizedBox(width: 8),
+                          Text('Lever',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text(
+                            style: TextStyle(fontSize: 18),
+                            DateFormat('HH:mm').format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                widget.weatherData.sunrise * 1000,
+                              ),
+                            ), // Lever du soleil
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.nightlight_round, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Coucher',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text(
+                            style: TextStyle(fontSize: 18),
+                            DateFormat('HH:mm').format(
+                              DateTime.fromMillisecondsSinceEpoch(
+                                widget.weatherData.sunset * 1000,
+
+                              ),
+                            ), // Coucher du soleil
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Carte pour les détails supplémentaires (VISIBILITÉ, PRÉCIPITATIONS, HUMIDITÉ)
+              Card(
+                elevation: 0,
+                color: themeProvider.cardColor.withOpacity(0.8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'DÉTAILS',
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Icon(Icons.visibility, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Visibilité',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text('${widget.weatherData.visibility / 1000} km',style: TextStyle(fontSize: 18)),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.cloud, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Précipitations',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text(
+                            widget.weatherData.precipitation != null
+                                ? '${widget.weatherData.precipitation} mm'
+                                : '0 mm',             style: TextStyle(fontSize: 18)
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          Icon(Icons.water, color: Colors.blue),
+                          SizedBox(width: 8),
+                          Text('Humidité',style: TextStyle(fontSize: 18)),
+                          Spacer(),
+                          Text('${widget.weatherData.humidity}%',style: TextStyle(fontSize: 18)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 30),
+              // Bouton "Voir sur Google Maps"
+              Center(
+                child: ElevatedButton.icon(
+                  onPressed: openGoogleMaps,
+                  icon: const Icon(Icons.location_on, color: Colors.white),
+                  label: const Text(
+                    "Voir sur Google Maps",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.withOpacity(0.8),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  IconData getWeatherIcon(String weatherDescription) {
-    switch (weatherDescription.toLowerCase()) {
+  String _getWeatherImage(String weatherDescription) {
+    String description = weatherDescription.toLowerCase();
+
+    switch (description) {
       case 'clear sky':
-        return Icons.wb_sunny;
+      case 'ciel dégagé':
+        return 'assets/clear.png';
       case 'few clouds':
+      case 'quelques nuages':
+      case 'partiellement nuageux':
+      case 'peu nuageux':
       case 'scattered clouds':
+      case 'nuages épars':
       case 'broken clouds':
-        return Icons.cloud;
+      case 'nuages fragmentés':
+        return 'assets/partlycloudy.png';
+      case 'nuageux':
+        return 'assets/cloud1.png';
       case 'shower rain':
+      case 'averses de pluie':
       case 'rain':
-        return Icons.beach_access;
+      case 'pluie':
+        return 'assets/moderaterainattimes.png';
       case 'thunderstorm':
-        return Icons.flash_on;
+      case 'orage':
+        return 'assets/windspeed.png';
       case 'snow':
-        return Icons.ac_unit;
+      case 'neige':
+        return 'assets/hail.png';
       default:
-        return Icons.cloud;
+        return 'assets/humidity.png';
     }
   }
 }

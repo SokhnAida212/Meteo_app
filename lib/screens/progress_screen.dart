@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/city_model.dart';
@@ -8,14 +7,13 @@ import '../utils/constantes.dart';
 import '../models/theme_provider.dart';
 import '../widgets/weather_details.dart';
 
-
 List<String> messages = [
   "Nous téléchargeons les données...",
   "C'est presque fini...",
-  "Plus que quelques secondes avant d'avoir le résultat..."
+  "Plus que quelques secondes..."
 ];
-List<String> cities = ['Canadà', 'chine', 'Matam', 'Paris', 'Kedougou','Dakar'];
 
+List<String> cities = ['Dakar', 'Canada', 'Reykjavik', 'Québec', 'Moscou', 'Singapour', 'Matam', 'Paris', 'Kédougou', 'Marrakech'];
 
 class ProgressScreen extends StatefulWidget {
   const ProgressScreen({super.key});
@@ -30,26 +28,26 @@ class _ProgressScreenState extends State<ProgressScreen> {
   int messageIndex = 0;
   late Timer _timer;
 
-
   @override
   void initState() {
     super.initState();
     startTimer();
     fetchDataForCities();
   }
+
   void startTimer() {
-    Timer.periodic(Duration(seconds: 6), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 6), (timer) {
       setState(() {
         messageIndex = (messageIndex + 1) % messages.length;
       });
     });
   }
+
   String getMessage() {
     return messages[messageIndex];
   }
 
   void fetchDataForCities() async {
-
     int index = 0;
     Timer.periodic(Duration(seconds: 5), (timer) {
       if (index >= cities.length) {
@@ -62,16 +60,17 @@ class _ProgressScreenState extends State<ProgressScreen> {
       WeatherAPI.fetchWeatherData(city).then((weatherData) {
         setState(() {
           weatherDataList.add(weatherData);
-          progressValue = weatherDataList.length / cities.length; // Mettre à jour la valeur de la barre de progression
+          progressValue = weatherDataList.length / cities.length;
         });
       }).catchError((e) {
-        print('Error fetching weather data for $city: $e');
+        print('Erreur lors de la récupération des données météo pour $city: $e');
       });
     });
   }
+
   @override
   void dispose() {
-    _timer?.cancel();
+    _timer.cancel();
     super.dispose();
   }
 
@@ -82,49 +81,34 @@ class _ProgressScreenState extends State<ProgressScreen> {
     final themeProvider = Provider.of<ThemeProvider>(context);
 
     return Scaffold(
-      backgroundColor: Color(0xffECF8F9),
+      backgroundColor: themeProvider.scaffoldBackgroundColor,
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        centerTitle: false,
-        titleSpacing: 0,
-        title: Container(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          width: size.width,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: () {
+        title: Text('Météo', style: TextStyle(color: themeProvider.textColor)),
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.menu, color: themeProvider.iconColor),
+            onSelected: (String result) {
+              switch (result) {
+                case 'Accueil':
                   Navigator.pop(context);
-                },
-                icon: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  child: Image.asset('assets/bouton-fleche.png', width: 30, height: 30,color: themeProvider.iconColor,),
-                ),
-              ),
-              IconButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                icon: ClipRRect(
-                  borderRadius: BorderRadius.all(Radius.circular(10)),
-                  child: Image.asset('assets/accueil.png', width: 30, height: 30,color: themeProvider.iconColor,),
-                ),
-              ),
-              IconButton(
-                icon: Icon(themeProvider.themeMode == ThemeMode.dark
-                    ? Icons.light_mode
-                    : Icons.dark_mode,
-                  color: themeProvider.iconColor),
-                onPressed: () {
-                  // Bascule entre le mode clair et sombre
+                  break;
+                case 'Changer le thème':
                   themeProvider.toggleTheme(themeProvider.themeMode == ThemeMode.light);
-                },
-              )
+                  break;
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              PopupMenuItem<String>(
+                value: 'Accueil',
+                child: Text('Accueil'),
+              ),
+              PopupMenuItem<String>(
+                value: 'Changer le thème',
+                child: Text('Changer le thème'),
+              ),
             ],
           ),
-        ),
+        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -134,11 +118,25 @@ class _ProgressScreenState extends State<ProgressScreen> {
           ),
         ),
         child: Padding(
-          padding: const EdgeInsets.only(top: 50.0),
+          padding: const EdgeInsets.only(top: 20.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (weatherDataList.length >= cities.length)
+              if (progressValue < 1.0)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+                  child: LinearProgressIndicator(
+                    value: progressValue.clamp(0.0, 1.0),
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      themeProvider.themeMode == ThemeMode.dark
+                          ? Colors.blueAccent
+                          : Colors.lightBlue,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+              if (progressValue >= 1.0)
                 ElevatedButton(
                   onPressed: () {
                     setState(() {
@@ -148,38 +146,41 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     });
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.lightBlueAccent,
-                    foregroundColor: themeProvider.textColor,
-                  ),
-                  child: Text('Recommencer', style: TextStyle(color: Colors.black87, fontSize: 18,fontWeight: FontWeight.bold),),
-                ),
-              SizedBox(
-                height: 20,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                  child: Container(
-                    child: Visibility(
-                      visible: progressValue < 1.0,
-                      child: LinearProgressIndicator(
-                        value: progressValue.clamp(0.0, 1.0),
-                        backgroundColor: Colors.grey[300],
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                    backgroundColor: themeProvider.themeMode == ThemeMode.dark
+                        ? Colors.blueAccent
+                        : Colors.lightBlue,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(25),
                     ),
                   ),
+                  child: Text(
+                    'Recommencer',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
               if (progressValue < 1.0)
                 Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    getMessage(),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: themeProvider.textColor,
-                    ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.download_rounded,
+                        color: themeProvider.textColor,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        getMessage(),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: themeProvider.textColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               if (progressValue >= 1.0)
@@ -188,30 +189,6 @@ class _ProgressScreenState extends State<ProgressScreen> {
                     itemCount: weatherDataList.length,
                     itemBuilder: (context, index) {
                       WeatherData weatherData = weatherDataList[index];
-                      IconData weatherIcon;
-                      switch (weatherData.weatherDescription.toLowerCase()) {
-                        case 'clear sky':
-                          weatherIcon = Icons.wb_sunny;
-                          break;
-                        case 'few clouds':
-                        case 'scattered clouds':
-                        case 'broken clouds':
-                          weatherIcon = Icons.cloud;
-                          break;
-                        case 'shower rain':
-                        case 'rain':
-                          weatherIcon = Icons.beach_access;
-                          break;
-                        case 'thunderstorm':
-                          weatherIcon = Icons.flash_on;
-                          break;
-                        case 'snow':
-                          weatherIcon = Icons.ac_unit;
-                          break;
-                        default:
-                          weatherIcon = Icons.cloud;
-                          break;
-                      }
                       return GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -229,47 +206,63 @@ class _ProgressScreenState extends State<ProgressScreen> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: ListTile(
-                            leading: Icon(weatherIcon, size: 36, color: Colors.blue),
-                            title: Text(
-                              weatherData.cityName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 20,
-                                color: themeProvider.textColor,
-                              ),
-                            ),
-                            subtitle: Column(
+                          color: themeProvider.cardColor,
+                          child: Padding(
+                            padding: const EdgeInsets.all(16.0),
+                            child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const SizedBox(height: 8),
+                                Text(
+                                  weatherData.cityName,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 20,
+                                    color: themeProvider.textColor,
+                                  ),
+                                ),
+                                SizedBox(height: 8),
                                 Row(
                                   children: [
-                                    Icon(Icons.thermostat_rounded, size: 16, color: Colors.grey),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Température: ${weatherData.temperature}°C',
-                                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                                    Image.asset(
+                                      _getWeatherImage(weatherData.weatherDescription),
+                                      width: 40,
+                                      height: 40,
+                                    ),
+                                    SizedBox(width: 16),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '${weatherData.temperature}°C',
+                                          style: TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: themeProvider.textColor,
+                                          ),
+                                        ),
+                                        Text(
+                                          'Min: ${weatherData.temp_min}°C  Max: ${weatherData.temp_max}°C',
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            color: themeProvider.textColor,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(Icons.cloud_rounded, size: 16, color: Colors.grey),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Description: ${weatherData.weatherDescription}',
-                                      style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-                                    ),
-                                  ],
+                                SizedBox(height: 8),
+                                Text(
+                                  'Description: ${weatherData.weatherDescription}',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: themeProvider.textColor,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-
-
                       );
                     },
                   ),
@@ -281,6 +274,37 @@ class _ProgressScreenState extends State<ProgressScreen> {
     );
   }
 
+  String _getWeatherImage(String weatherDescription) {
+    String description = weatherDescription.toLowerCase();
 
-
+    switch (description) {
+      case 'clear sky':
+      case 'ciel dégagé':
+        return 'assets/clear.png';
+      case 'few clouds':
+      case 'quelques nuages':
+      case 'partiellement nuageux':
+      case 'peu nuageux':
+      case 'scattered clouds':
+      case 'nuages épars':
+      case 'broken clouds':
+      case 'nuages fragmentés':
+        return 'assets/partlycloudy.png';
+      case 'nuageux':
+        return 'assets/cloud1.png';
+      case 'shower rain':
+      case 'averses de pluie':
+      case 'rain':
+      case 'pluie':
+        return 'assets/moderaterainattimes.png';
+      case 'thunderstorm':
+      case 'orage':
+        return 'assets/windspeed.png';
+      case 'snow':
+      case 'neige':
+        return 'assets/hail.png';
+      default:
+        return 'assets/humidity.png';
+    }
+  }
 }

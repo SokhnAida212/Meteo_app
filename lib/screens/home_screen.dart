@@ -15,75 +15,104 @@ class HomeScreen extends StatelessWidget {
     Size size = MediaQuery.of(context).size;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Weather App', style: TextStyle(color: themeProvider.textColor)),
-        actions: [
-          // Bouton pour basculer entre les thèmes clair et sombre
-          IconButton(
-            icon: Icon(themeProvider.themeMode == ThemeMode.dark
-                ? Icons.light_mode
-                : Icons.dark_mode),
-            onPressed: () {
-              // Bascule entre le mode clair et sombre
-              themeProvider.toggleTheme(themeProvider.themeMode == ThemeMode.light);
-            },
-          ),
-        ],
-      ),
       body: Container(
         width: size.width,
         height: size.height,
         decoration: BoxDecoration(
           image: DecorationImage(
-            image: AssetImage(themeProvider.backgroundImage), // Image dynamique
+            image: AssetImage(themeProvider.backgroundImage),
             fit: BoxFit.cover,
           ),
         ),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 300),
-              Container(
-                child: Text(
-                  'Prévisions météo précises,\n      instantanées, partout.',
-                  style: TextStyle(
-                    color: themeProvider.textColor,
-                    fontSize: 25,
-                    fontWeight: FontWeight.bold,
-                  ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: Icon(
+                  themeProvider.themeMode == ThemeMode.dark
+                      ? Icons.light_mode
+                      : Icons.dark_mode,
+                  color: themeProvider.textColor,
+                  size: 30,
                 ),
-              ),
-              const SizedBox(height: 40),
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ProgressScreen()),
-                  );
+                onPressed: () {
+                  themeProvider.toggleTheme(themeProvider.themeMode == ThemeMode.light);
                 },
-                child: Container(
-                  height: 50,
-                  width: size.width * 0.7,
-                  decoration: const BoxDecoration(
-                    color: Colors.lightBlueAccent,
-                    borderRadius: BorderRadius.all(Radius.circular(10)),
+              ),
+            ),
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+
+                  const SizedBox(height: 20),
+                  Text(
+                    'Prévisions Météo',
+                    style: TextStyle(
+                      color: themeProvider.textColor,
+                      fontSize: 33,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  child: const Center(
-                    child: Text(
-                      'Demarrer',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                  const SizedBox(height: 10),
+                  Text(
+                    'Découvrez la météo en temps réel',
+                    style: TextStyle(
+                      color: themeProvider.textColor,
+                      fontSize: 19,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Restez informé des conditions météorologiques',
+                    style: TextStyle(
+                      color: themeProvider.textColor,
+                      fontSize: 19,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ProgressScreen()),
+                      );
+                    },
+                    child: Container(
+                      height: 50,
+                      width: size.width * 0.6,
+                      decoration: BoxDecoration(
+                        color: Colors.lightBlueAccent,
+                        borderRadius: BorderRadius.circular(25),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.blue.withOpacity(0.3),
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Center(
+                        child: Text(
+                          'Démarrer',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

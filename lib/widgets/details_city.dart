@@ -34,7 +34,6 @@ class DetailsCity extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Constantes myConst = Constantes();
-    IconData? weatherIcon = getWeatherIcon(weatherData.weatherDescription);
 
     Size size = MediaQuery.of(context).size;
 
@@ -63,13 +62,9 @@ class DetailsCity extends StatelessWidget {
                             getTodayDate(),
                             style: const TextStyle(fontSize: 16, color: Colors.white70),
                           ),
-                          Text(
-                            'Heure locale: ${getCityTime(weatherData.timezone)}',
-                            style: const TextStyle(fontSize: 16, color: Colors.white70),
-                          ),
+
                         ],
                       ),
-                      Icon(weatherIcon, size: 40, color: Colors.white),
                     ],
                   ),
                 ),
